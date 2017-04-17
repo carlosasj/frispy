@@ -1,5 +1,6 @@
 from termcolor import cprint
 import re
+from schema import Schema, SchemaError
 
 from typing import Callable, List
 
@@ -13,64 +14,15 @@ def print_error(txt):
 
 
 def is_superset(superset, subset):
-    assert type(superset) is type(subset), {
-        "message": "different types",
-        "path": [],
-    }
-
-    # Now we can check the type for superset only, because we know that
-    # type(superset) is type(subset)
-
-    if isinstance(superset, list):
-        assert len(superset) == len(subset), {
-            "message": f"lists with different sizes",
-            "path": [],
-        }
-        for num, (superset_item, subset_item) in enumerate(zip(superset, subset)):
-            try:
-                val = is_superset(superset_item, subset_item)
-                assert val, {
-                    "message": f"error at iteration {num}",
-                    "path": [],
-                }
-            except AssertionError as err:
-                err.args[0]["path"].insert(0, num)
-                raise err
-
-    elif isinstance(superset, dict):
-        for key in subset:
-            assert key in superset, {
-                "message": f"key \"{key}\" not found",
-                "path": [key],
-            }
-
-            try:
-                val = is_superset(superset[key], subset[key])
-                assert val, {
-                    "message":
-                        f"values \"{str(superset[key])[:30]}"
-                        f"{'...' if len(str(superset[key])) > 30 else ''}\" "
-                        f"and \"{str(subset[key])[:30]}"
-                        f"{'...' if len(str(subset[key])) > 30 else ''}\" "
-                        f"differ for key \"{key}\"",
-                    "path": [],
-                }
-            except AssertionError as err:
-                err.args[0]["path"].insert(0, key)
-                raise err
-
-    else:
-        assert superset == subset, {
-            "message":
-                f"values \"{str(superset)[:30]}"
-                f"{'...' if len(str(superset)) > 30 else ''}\" "
-                f"and \"{str(subset)[:30]}"
-                f"{'...' if len(str(subset)) > 30 else ''}\" "
-                f"differ",
-            "path": [],
-        }
-
-    return True
+    try:
+        Schema(subset, ignore_extra_keys=True).validate(superset)
+        return True
+    except SchemaError as err:
+        # Convert SchemaError to AssertionError
+        raise AssertionError({
+            "message": err.args[0],
+            "path": []
+        })
 
 
 def apply_function_on_splitted(path: List[str],

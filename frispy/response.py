@@ -117,7 +117,7 @@ class Response:
     def expect_json(self, path, json, text=None):
         temp_path = 'response' if path is None else f"\"{path}\""
         expectation = (text if text is not None else
-                       f"Expect {temp_path} to be the declared JSON")
+                       f"Expect {temp_path} to be the declared Schema")
         try:
             apply_function_on_path(path, self.response.json(), is_superset, json)
         except (AssertionError, TypeError, KeyError) as err:
